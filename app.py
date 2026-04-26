@@ -14,18 +14,23 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 # -------------------------
 load_dotenv()
 
-# Works for BOTH local (.env) and Streamlit Cloud (secrets)
-GROQ_API_KEY = os.getenv("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
+# SAFE API KEY LOADING (NO ERROR)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+try:
+    if not GROQ_API_KEY:
+        GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+except:
+    pass
 
 if not GROQ_API_KEY:
-    st.error("❌ GROQ API KEY not found. Add it in .env or Streamlit secrets.")
+    st.error("❌ GROQ API KEY missing. Add in .env or Streamlit secrets.")
     st.stop()
 
 # -------------------------
 # PAGE CONFIG
 # -------------------------
 st.set_page_config(page_title="Chat with PDF", layout="wide")
-
 st.title("💬 Chat with your PDF")
 
 # -------------------------
@@ -40,12 +45,17 @@ def load_embeddings():
 embeddings = load_embeddings()
 
 # -------------------------
-# PROCESS PDF
+# PROCESS PDF (FIXED VERSION 🔥)
 # -------------------------
 @st.cache_resource
 def process_pdf(file_path):
     loader = PyPDFLoader(file_path)
     docs = loader.load()
+
+    # Check if PDF has text
+    if not docs:
+        st.error("❌ No text found in PDF")
+        st.stop()
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
@@ -54,7 +64,19 @@ def process_pdf(file_path):
 
     chunks = splitter.split_documents(docs)
 
-    vectordb = Chroma.from_documents(chunks, embeddings)
+    if not chunks:
+        st.error("❌ Could not split PDF into chunks")
+        st.stop()
+
+    # Clean text
+    texts = [doc.page_content.strip() for doc in chunks if doc.page_content.strip()]
+
+    if not texts:
+        st.error("❌ PDF has no readable text (maybe scanned image PDF)")
+        st.stop()
+
+    # Create vector DB safely
+    vectordb = Chroma.from_texts(texts, embeddings)
     return vectordb
 
 # -------------------------
@@ -76,7 +98,7 @@ if "vectordb" not in st.session_state:
     st.session_state.vectordb = None
 
 # -------------------------
-# SIDEBAR (EXTRA UI 🔥)
+# SIDEBAR
 # -------------------------
 with st.sidebar:
     st.header("⚙️ Controls")
@@ -115,7 +137,7 @@ for msg in st.session_state.messages:
 if prompt := st.chat_input("Ask something about your PDF..."):
 
     if st.session_state.vectordb is None:
-        st.warning("⚠️ Please upload a PDF first.")
+        st.warning("⚠️ Upload a PDF first")
         st.stop()
 
     # Show user message
@@ -131,25 +153,15 @@ if prompt := st.chat_input("Ask something about your PDF..."):
     context = "\n\n".join([doc.page_content for doc in docs])
 
     # -------------------------
-    # BUILD CHAT HISTORY
-    # -------------------------
-    history = []
-    for m in st.session_state.messages:
-        if m["role"] == "user":
-            history.append(HumanMessage(content=m["content"]))
-        else:
-            history.append(AIMessage(content=m["content"]))
-
-    # -------------------------
     # FINAL PROMPT
     # -------------------------
     messages = [
-        SystemMessage(content="Answer strictly based on the provided PDF context."),
+        SystemMessage(content="Answer ONLY from the provided PDF context."),
         HumanMessage(content=f"Context:\n{context}\n\nQuestion:\n{prompt}")
     ]
 
     # -------------------------
-    # LLM RESPONSE
+    # RESPONSE
     # -------------------------
     with st.chat_message("assistant"):
         with st.spinner("Thinking... 🤔"):
