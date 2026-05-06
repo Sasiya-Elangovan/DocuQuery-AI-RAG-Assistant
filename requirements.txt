@@ -12,9 +12,7 @@ chromadb==0.5.5
 pypdf==4.3.1
 python-dotenv==1.0.1
 
-sentence-transformers==2.7.0
-transformers==4.41.2
-torch==2.9.0
+sentence-transformers
 
 numpy==1.26.4
 protobuf==4.25.3
