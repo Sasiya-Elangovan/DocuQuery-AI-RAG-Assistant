@@ -45,7 +45,7 @@ def load_embeddings():
 embeddings = load_embeddings()
 
 # -------------------------
-# PROCESS PDF (FIXED VERSION 🔥)
+# PROCESS PDF 
 # -------------------------
 @st.cache_resource
 def process_pdf(file_path):

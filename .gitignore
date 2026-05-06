@@ -1,6 +1,7 @@
-.env
+venv/
+venv311/
 __pycache__/
 *.pyc
-data/
+.env
 db/
 temp.pdf
