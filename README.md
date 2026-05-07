@@ -87,18 +87,3 @@ streamlit run app.py
 ## 🌐 Deployment
 
 Deployed using Streamlit Community Cloud.
-
----
-
-## 📄 Resume Description
-
-Developed and deployed an AI-powered Retrieval-Augmented Generation (RAG) application for querying PDF documents using LangChain, ChromaDB, HuggingFace embeddings, and Groq LLM.
-
----
-
-## 👨‍💻 Author
-
-Sasiya Elangovan
-
-GitHub:
-https://github.com/Sasiya-Elangovan
